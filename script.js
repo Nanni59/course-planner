@@ -100,13 +100,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const dayContainer = document.getElementById(dayId);
         const tasks = [];
         
-        dayContainer.querySelectorAll('.task-list li').forEach((li, index) => {
+        dayContainer.querySelectorAll('.task-list li').forEach((li) => {
             const task = {
                 type: li.querySelector('.task-type').value,
                 name: li.querySelector('.task-name').value,
                 notes: li.querySelector('.task-notes').value, 
                 checked: li.querySelector('.task-checkbox').checked,
-                id: `${dayId}-task-${index}` 
             };
             tasks.push(task);
         });
@@ -127,8 +126,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const dayContainer = document.getElementById(dayId);
         const listItems = dayContainer.querySelectorAll('.task-list li');
 
-        data.forEach(task => {
-            const li = listItems[task.id.split('-').pop()];
+        // Iterate over the loaded data and use the index to match it to the correct course card (list item)
+        data.forEach((task, index) => {
+            const li = listItems[index]; 
             if (li) {
                 li.querySelector('.task-type').value = task.type;
                 li.querySelector('.task-name').value = task.name;
@@ -138,9 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const notesTextarea = li.querySelector('.task-notes');
                 notesTextarea.value = task.notes;
                 
-                // Trigger resize for loaded content
-                notesTextarea.style.height = 'auto'; // Reset height
-                notesTextarea.style.height = notesTextarea.scrollHeight + 'px'; // Set to content height
+                // FIX: Explicitly set height to 'auto', then to scrollHeight to force expansion immediately after loading content.
+                notesTextarea.style.height = 'auto'; 
+                notesTextarea.style.height = notesTextarea.scrollHeight + 'px';
             }
         });
     }
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 notesTextarea.value = '';
                 notesTextarea.style.height = '38px'; // Reset height to min-height defined in CSS
             });
-            alert(`${dayId.toUpperCase()} has been reset.`);
+            alert(`${dayId.toUpperCase()} has been reset. To restore old data, you must reload the page and not save.`);
         }
     });
 
