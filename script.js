@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lesson: 'https://docs.google.com/spreadsheets/d/1cIZHqJn9-RVVq-zWeM-oYsnhwQAEYFawiz6r2M_ir0o/edit?gid=2113032239#gid=2113032239',
             assignment: 'https://docs.google.com/spreadsheets/d/1L7H6FaLGjKv53nMCo0_cT3EyoElE4arn-crZo44wGYk/edit?gid=1839682151#gid=1839682151'
         }
+        // Note: Advanced Functions and Data Management are handled by their Day A entries since they are the same courses
     };
 
     // --- 2. Tab Switching Logic ---
@@ -59,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- 3. Global Button Logic (Uses Global Links) ---
+    // --- 3. Global Button Logic ---
     document.getElementById('lessonTrackerBtn').addEventListener('click', () => {
         window.open(GLOBAL_LESSON_TRACKER_URL, '_blank');
     });
@@ -68,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open(GLOBAL_ASSIGNMENT_TRACKER_URL, '_blank');
     });
 
-    // --- 4. Checkmark Click Logic (Uses Course-Specific Links) ---
+    // --- 4. Checkmark Click Logic ---
     document.body.addEventListener('change', (event) => {
         if (event.target.classList.contains('task-checkbox') && event.target.checked) {
             const listItem = event.target.closest('li');
@@ -78,18 +79,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const links = COURSE_LINKS[courseTitle];
             
             if (links) {
-                console.log(`Checkbox clicked for ${courseTitle}. Opening specific links...`);
                 // Open Lesson Tracker
                 window.open(links.lesson, '_blank');
                 // Open Assignment Tracker
                 window.open(links.assignment, '_blank');
-            } else {
-                 console.log(`Checkbox clicked for ${courseTitle}, but no specific links found.`);
             }
         }
     });
 
-    // --- 5. Save Logic (using localStorage) ---
+    // --- 5. Save Logic (Refactored to use Course Titles as keys) ---
     document.getElementById('saveBtn').addEventListener('click', () => {
         saveData('dayA');
         saveData('dayB');
@@ -98,47 +96,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function saveData(dayId) {
         const dayContainer = document.getElementById(dayId);
-        const tasks = [];
-        
-        dayContainer.querySelectorAll('.task-list li').forEach((li) => {
-            const task = {
-                type: li.querySelector('.task-type').value,
-                name: li.querySelector('.task-name').value,
-                notes: li.querySelector('.task-notes').value, 
-                checked: li.querySelector('.task-checkbox').checked,
-            };
-            tasks.push(task);
+        const tasks = {}; // Store tasks as an object keyed by course name
+
+        dayContainer.querySelectorAll('.course-card').forEach((card) => {
+            const courseTitle = card.querySelector('h3').textContent.trim();
+            const li = card.querySelector('.task-list li');
+            
+            if (li) {
+                tasks[courseTitle] = {
+                    type: li.querySelector('.task-type').value,
+                    name: li.querySelector('.task-name').value,
+                    notes: li.querySelector('.task-notes').value, 
+                    checked: li.querySelector('.task-checkbox').checked,
+                };
+            }
         });
         
         localStorage.setItem(`${dayId}_data`, JSON.stringify(tasks));
     }
 
-    // --- 6. Load Logic (on page start) ---
+    // --- 6. Load Logic (Refactored to load by Course Titles) ---
     function loadData() {
         loadDay('dayA');
         loadDay('dayB');
     }
 
     function loadDay(dayId) {
+        // Data is now an object, keyed by Course Title
         const data = JSON.parse(localStorage.getItem(`${dayId}_data`));
         if (!data) return;
 
         const dayContainer = document.getElementById(dayId);
-        const listItems = dayContainer.querySelectorAll('.task-list li');
-
-        // Iterate over the loaded data and use the index to match it to the correct course card (list item)
-        data.forEach((task, index) => {
-            const li = listItems[index]; 
-            if (li) {
+        
+        // Find every course card on the current day
+        dayContainer.querySelectorAll('.course-card').forEach((card) => {
+            const courseTitle = card.querySelector('h3').textContent.trim();
+            // Get the saved task data using the course title
+            const task = data[courseTitle]; 
+            
+            if (task) {
+                const li = card.querySelector('.task-list li');
+                const notesTextarea = li.querySelector('.task-notes');
+                
                 li.querySelector('.task-type').value = task.type;
                 li.querySelector('.task-name').value = task.name;
                 li.querySelector('.task-checkbox').checked = task.checked;
 
-                // Load and Resize Textarea
-                const notesTextarea = li.querySelector('.task-notes');
+                // Load and Resize Textarea (Fix for Day B/Text Area Expansion)
                 notesTextarea.value = task.notes;
                 
-                // FIX: Explicitly set height to 'auto', then to scrollHeight to force expansion immediately after loading content.
+                // Explicitly force the textarea to resize based on its content immediately
                 notesTextarea.style.height = 'auto'; 
                 notesTextarea.style.height = notesTextarea.scrollHeight + 'px';
             }
@@ -161,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Reset textarea
                 const notesTextarea = li.querySelector('.task-notes');
                 notesTextarea.value = '';
-                notesTextarea.style.height = '38px'; // Reset height to min-height defined in CSS
+                notesTextarea.style.height = '38px'; // Reset height to min-height
             });
             alert(`${dayId.toUpperCase()} has been reset. To restore old data, you must reload the page and not save.`);
         }
@@ -171,8 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.addEventListener('input', (event) => {
         if (event.target.classList.contains('task-notes')) {
             const textarea = event.target;
-            textarea.style.height = 'auto'; // Reset height to shrink if text is deleted
-            textarea.style.height = (textarea.scrollHeight) + 'px'; // Set to new scroll height
+            textarea.style.height = 'auto'; 
+            textarea.style.height = (textarea.scrollHeight) + 'px'; 
         }
     });
 
